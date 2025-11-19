@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import GameLayout from '@/components/game-layout';
+import { useScores } from '@/hooks/use-scores';
+import { toast } from 'sonner';
 
 const EMOJIS = ['🎮', '🎯', '🎨', '🎭', '🎪', '🎸', '🎺', '🎹'];
 
@@ -21,6 +23,35 @@ export default function MemoryGame() {
   const [isPaused, setIsPaused] = useState(false);
   const [highScore, setHighScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+
+  const { addScore, getGameHighScore } = useScores();
+
+  useEffect(() => {
+    const savedHighScore = getGameHighScore('memory');
+    setHighScore(savedHighScore);
+  }, [getGameHighScore]);
+
+  useEffect(() => {
+    if (gameStarted && startTime === 0) {
+      setStartTime(Date.now());
+    }
+  }, [gameStarted, startTime]);
+
+  useEffect(() => {
+    if (gameOver && !scoreSubmitted && score > 0) {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      const newScore = addScore('memory', score, duration);
+      setScoreSubmitted(true);
+      
+      if (newScore.is_high_score) {
+        toast.success('🎉 New high score!', {
+          description: `You scored ${score} points!`
+        });
+      }
+    }
+  }, [gameOver, score, scoreSubmitted, startTime, addScore]);
 
   const initializeGame = useCallback(() => {
     const shuffled = [...EMOJIS, ...EMOJIS]
@@ -39,6 +70,8 @@ export default function MemoryGame() {
     setGameOver(false);
     setIsPaused(false);
     setGameStarted(false);
+    setStartTime(0);
+    setScoreSubmitted(false);
   }, []);
 
   useEffect(() => {

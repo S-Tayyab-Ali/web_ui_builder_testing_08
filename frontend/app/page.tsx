@@ -1,21 +1,23 @@
 "use client";
 
 import { useState } from 'react';
-import { mockGames } from '@/lib/mock-data';
 import GameCard from '@/components/game-card';
 import Header from '@/components/header';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useRouter } from 'next/navigation';
+import { useGames } from '@/hooks/use-games';
 
 export default function Home() {
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
   const router = useRouter();
+  const { games, incrementPlayCount } = useGames();
 
   const filteredGames = categoryFilter === 'all' 
-    ? mockGames 
-    : mockGames.filter(game => game.category === categoryFilter);
+    ? games 
+    : games.filter(game => game.category === categoryFilter);
 
   const handlePlayGame = (gameId: string) => {
+    incrementPlayCount(gameId);
     router.push(`/play/${gameId}`);
   };
 
@@ -66,3 +68,5 @@ export default function Home() {
     </div>
   );
 }
+
+

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState, useCallback } from 'react';
 import GameLayout from '@/components/game-layout';
+import { useScores } from '@/hooks/use-scores';
+import { toast } from 'sonner';
 
 const GRID_SIZE = 20;
 const CELL_SIZE = 25;
@@ -21,9 +23,38 @@ export default function SnakeGame() {
   const [isPaused, setIsPaused] = useState(false);
   const [highScore, setHighScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+
+  const { addScore, getGameHighScore } = useScores();
 
   const gameLoopRef = useRef<NodeJS.Timeout | null>(null);
   const nextDirectionRef = useRef<Position>(INITIAL_DIRECTION);
+
+  useEffect(() => {
+    const savedHighScore = getGameHighScore('snake');
+    setHighScore(savedHighScore);
+  }, [getGameHighScore]);
+
+  useEffect(() => {
+    if (gameStarted && startTime === 0) {
+      setStartTime(Date.now());
+    }
+  }, [gameStarted, startTime]);
+
+  useEffect(() => {
+    if (gameOver && !scoreSubmitted && score > 0) {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      const newScore = addScore('snake', score, duration);
+      setScoreSubmitted(true);
+      
+      if (newScore.is_high_score) {
+        toast.success('🎉 New high score!', {
+          description: `You scored ${score} points!`
+        });
+      }
+    }
+  }, [gameOver, score, scoreSubmitted, startTime, addScore]);
 
   const generateFood = useCallback((currentSnake: Position[]) => {
     let newFood: Position;
@@ -45,6 +76,8 @@ export default function SnakeGame() {
     setGameOver(false);
     setIsPaused(false);
     setGameStarted(false);
+    setStartTime(0);
+    setScoreSubmitted(false);
   }, [generateFood]);
 
   const moveSnake = useCallback(() => {

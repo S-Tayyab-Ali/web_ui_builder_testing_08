@@ -1,43 +1,72 @@
 "use client";
 
-import { useState } from 'react';
 import Header from '@/components/header';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
-import { User, Save, Trash2 } from 'lucide-react';
+import { User, Save, Trash2, Download } from 'lucide-react';
 import { toast } from 'sonner';
+import { useProfile } from '@/hooks/use-profile';
+import { useScores } from '@/hooks/use-scores';
+import { exportAllData, clearAllData } from '@/lib/storage';
+import { useState } from 'react';
 
 export default function ProfilePage() {
-  const [username, setUsername] = useState('Player123');
-  const [soundEnabled, setSoundEnabled] = useState(true);
-  const [hasProfile, setHasProfile] = useState(true);
+  const { profile, createProfile, updateProfile, deleteProfile } = useProfile();
+  const { scores } = useScores();
+  const [tempUsername, setTempUsername] = useState('');
 
   const handleSaveProfile = () => {
+    if (!profile) return;
+    
+    if (profile.username.length < 3) {
+      toast.error('Username must be at least 3 characters long');
+      return;
+    }
+    
     toast.success('Profile saved successfully!');
   };
 
   const handleDeleteProfile = () => {
-    const confirmed = window.confirm('Are you sure you want to delete your profile? This action cannot be undone.');
+    const confirmed = window.confirm('Are you sure you want to delete your profile? All your scores will also be deleted. This action cannot be undone.');
     if (confirmed) {
-      setHasProfile(false);
-      setUsername('');
-      toast.success('Profile deleted successfully');
+      clearAllData();
+      deleteProfile();
+      toast.success('Profile and all data deleted successfully');
     }
   };
 
   const handleCreateProfile = () => {
-    if (username.length < 3) {
+    if (tempUsername.length < 3) {
       toast.error('Username must be at least 3 characters long');
       return;
     }
-    setHasProfile(true);
+    createProfile(tempUsername);
     toast.success('Profile created successfully!');
   };
 
-  if (!hasProfile) {
+  const handleExportData = () => {
+    const data = exportAllData();
+    const blob = new Blob([data], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `gamehub-data-${new Date().toISOString()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    toast.success('Data exported successfully!');
+  };
+
+  const totalGames = new Set(scores.map(s => s.game_id)).size;
+  const totalScore = scores.reduce((sum, s) => sum + s.score_value, 0);
+  const highScores = scores.filter(s => s.is_high_score).length;
+  const memberSince = profile?.created_date 
+    ? new Date(profile.created_date).toLocaleDateString() 
+    : 'Just now';
+
+  if (!profile) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-purple-50 via-blue-50 to-cyan-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <Header />
@@ -59,8 +88,8 @@ export default function ProfilePage() {
                 <Input
                   id="username"
                   placeholder="Enter your username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={tempUsername}
+                  onChange={(e) => setTempUsername(e.target.value)}
                   minLength={3}
                   maxLength={20}
                 />
@@ -99,8 +128,8 @@ export default function ProfilePage() {
                 <Label htmlFor="username">Username</Label>
                 <Input
                   id="username"
-                  value={username}
-                  onChange={(e) => setUsername(e.target.value)}
+                  value={profile.username}
+                  onChange={(e) => updateProfile({ username: e.target.value })}
                   minLength={3}
                   maxLength={20}
                 />
@@ -114,8 +143,8 @@ export default function ProfilePage() {
                   </p>
                 </div>
                 <Switch
-                  checked={soundEnabled}
-                  onCheckedChange={setSoundEnabled}
+                  checked={profile.sound_enabled}
+                  onCheckedChange={(checked) => updateProfile({ sound_enabled: checked })}
                 />
               </div>
 
@@ -137,21 +166,36 @@ export default function ProfilePage() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Games Played</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{totalGames}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Total Score</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{totalScore}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">High Scores</p>
-                  <p className="text-2xl font-bold">0</p>
+                  <p className="text-2xl font-bold">{highScores}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-sm text-muted-foreground">Member Since</p>
-                  <p className="text-sm font-medium">Just now</p>
+                  <p className="text-sm font-medium">{memberSince}</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-blue-200 dark:border-blue-900">
+            <CardHeader>
+              <CardTitle className="text-blue-600 dark:text-blue-400">Export Data</CardTitle>
+              <CardDescription>
+                Download all your data as a JSON file
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <Button onClick={handleExportData} variant="outline" className="w-full">
+                <Download className="w-4 h-4 mr-2" />
+                Export All Data
+              </Button>
             </CardContent>
           </Card>
 

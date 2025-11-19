@@ -2,6 +2,8 @@
 
 import { useEffect, useState, useCallback } from 'react';
 import GameLayout from '@/components/game-layout';
+import { useScores } from '@/hooks/use-scores';
+import { toast } from 'sonner';
 
 const GRID_SIZE = 4;
 
@@ -14,6 +16,35 @@ export default function Game2048() {
   const [isPaused, setIsPaused] = useState(false);
   const [highScore, setHighScore] = useState(0);
   const [gameStarted, setGameStarted] = useState(false);
+  const [startTime, setStartTime] = useState<number>(0);
+  const [scoreSubmitted, setScoreSubmitted] = useState(false);
+
+  const { addScore, getGameHighScore } = useScores();
+
+  useEffect(() => {
+    const savedHighScore = getGameHighScore('2048');
+    setHighScore(savedHighScore);
+  }, [getGameHighScore]);
+
+  useEffect(() => {
+    if (gameStarted && startTime === 0) {
+      setStartTime(Date.now());
+    }
+  }, [gameStarted, startTime]);
+
+  useEffect(() => {
+    if (gameOver && !scoreSubmitted && score > 0) {
+      const duration = Math.floor((Date.now() - startTime) / 1000);
+      const newScore = addScore('2048', score, duration);
+      setScoreSubmitted(true);
+      
+      if (newScore.is_high_score) {
+        toast.success('🎉 New high score!', {
+          description: `You scored ${score} points!`
+        });
+      }
+    }
+  }, [gameOver, score, scoreSubmitted, startTime, addScore]);
 
   const createEmptyGrid = (): Grid => {
     return Array(GRID_SIZE).fill(null).map(() => Array(GRID_SIZE).fill(0));
@@ -48,6 +79,8 @@ export default function Game2048() {
     setGameOver(false);
     setIsPaused(false);
     setGameStarted(false);
+    setStartTime(0);
+    setScoreSubmitted(false);
   }, [addRandomTile]);
 
   useEffect(() => {
@@ -55,14 +88,12 @@ export default function Game2048() {
   }, [initializeGame]);
 
   const canMove = useCallback((currentGrid: Grid): boolean => {
-    // Check for empty cells
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         if (currentGrid[row][col] === 0) return true;
       }
     }
     
-    // Check for possible merges
     for (let row = 0; row < GRID_SIZE; row++) {
       for (let col = 0; col < GRID_SIZE; col++) {
         const current = currentGrid[row][col];
@@ -148,7 +179,7 @@ export default function Game2048() {
     if (!canMove(newGrid)) {
       setGameOver(true);
     }
-  }, [grid, gameOver, isPaused, gameStarted, addRandomTile, canMove, moveLeft, highScore]);
+  }, [grid, gameOver, isPaused, gameStarted, addRandomTile, canMove, moveLeft, highScore, rotateGrid]);
 
   useEffect(() => {
     const handleKeyPress = (e: KeyboardEvent) => {
@@ -238,3 +269,4 @@ export default function Game2048() {
     </GameLayout>
   );
 }
+

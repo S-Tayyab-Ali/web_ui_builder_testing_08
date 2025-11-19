@@ -7,16 +7,29 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Trophy, Trash2, Medal, Award } from 'lucide-react';
 import { toast } from 'sonner';
+import { useScores } from '@/hooks/use-scores';
+import { mockGames } from '@/lib/mock-data';
+import Link from 'next/link';
 
 export default function ScoresPage() {
   const [gameFilter, setGameFilter] = useState<string>('all');
-  const [scores] = useState<any[]>([]);
+  const { scores, deleteAllScores } = useScores();
+
+  const filteredScores = gameFilter === 'all'
+    ? scores
+    : scores.filter(s => s.game_id === gameFilter);
 
   const handleClearScores = () => {
     const confirmed = window.confirm('Are you sure you want to clear all your scores? This action cannot be undone.');
     if (confirmed) {
+      deleteAllScores();
       toast.success('All scores cleared successfully');
     }
+  };
+
+  const getGameTitle = (gameId: string): string => {
+    const game = mockGames.find(g => g.game_id === gameId);
+    return game?.title || gameId;
   };
 
   return (
@@ -30,7 +43,7 @@ export default function ScoresPage() {
             Track your progress and beat your high scores!
           </p>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 flex-wrap">
             <label className="text-sm font-medium">Filter by game:</label>
             <Select value={gameFilter} onValueChange={setGameFilter}>
               <SelectTrigger className="w-[200px]">
@@ -38,11 +51,11 @@ export default function ScoresPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All games</SelectItem>
-                <SelectItem value="snake">Snake Classic</SelectItem>
-                <SelectItem value="memory">Memory Match</SelectItem>
-                <SelectItem value="breakout">Breakout</SelectItem>
-                <SelectItem value="tetris">Tetris</SelectItem>
-                <SelectItem value="2048">2048</SelectItem>
+                {mockGames.map(game => (
+                  <SelectItem key={game.game_id} value={game.game_id}>
+                    {game.title}
+                  </SelectItem>
+                ))}
               </SelectContent>
             </Select>
             
@@ -55,25 +68,29 @@ export default function ScoresPage() {
           </div>
         </div>
 
-        {scores.length === 0 ? (
+        {filteredScores.length === 0 ? (
           <Card className="max-w-2xl mx-auto">
             <CardContent className="flex flex-col items-center justify-center py-12">
               <div className="w-20 h-20 bg-purple-100 dark:bg-purple-900 rounded-full flex items-center justify-center mb-4">
                 <Trophy className="w-10 h-10 text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-xl font-semibold mb-2">No Scores Yet</h3>
+              <h3 className="text-xl font-semibold mb-2">
+                {scores.length > 0 ? 'No Scores for This Game' : 'No Scores Yet'}
+              </h3>
               <p className="text-muted-foreground text-center mb-6">
-                Start playing games to see your scores here!
+                {scores.length > 0 
+                  ? 'Try playing this game to see scores here!'
+                  : 'Start playing games to see your scores here!'}
               </p>
               <Button asChild>
-                <a href="/">Browse Games</a>
+                <Link href="/">Browse Games</Link>
               </Button>
             </CardContent>
           </Card>
         ) : (
-          <div className="grid gap-4">
-            {scores.map((score, index) => (
-              <Card key={score.score_id}>
+          <div className="grid gap-4 max-w-4xl mx-auto">
+            {filteredScores.map((score, index) => (
+              <Card key={score.score_id} className={score.is_high_score ? 'border-yellow-400 dark:border-yellow-600' : ''}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
@@ -88,7 +105,7 @@ export default function ScoresPage() {
                         </div>
                       )}
                       <div>
-                        <CardTitle>{score.game_title}</CardTitle>
+                        <CardTitle>{getGameTitle(score.game_id)}</CardTitle>
                         <CardDescription>
                           {new Date(score.timestamp).toLocaleDateString()} at{' '}
                           {new Date(score.timestamp).toLocaleTimeString()}
@@ -115,3 +132,4 @@ export default function ScoresPage() {
     </div>
   );
 }
+

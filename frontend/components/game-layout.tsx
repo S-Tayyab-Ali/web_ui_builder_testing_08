@@ -1,11 +1,10 @@
 "use client";
 
-import { ReactNode, useState } from 'react';
+import { ReactNode } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Home, Pause, Play, RotateCcw, Trophy } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { toast } from 'sonner';
 
 interface GameLayoutProps {
   children: ReactNode;
@@ -33,7 +32,6 @@ export default function GameLayout({
   highScore
 }: GameLayoutProps) {
   const router = useRouter();
-  const [showControls, setShowControls] = useState(true);
 
   const handleExit = () => {
     const confirmed = window.confirm('Are you sure you want to exit? Your progress will be lost.');
@@ -181,3 +179,6 @@ export default function GameLayout({
     </div>
   );
 }
+
+
+
