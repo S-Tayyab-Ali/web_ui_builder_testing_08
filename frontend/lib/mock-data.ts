@@ -29,15 +29,6 @@ export const mockGames: Game[] = [
     play_count: 0
   },
   {
-    game_id: 'tetris',
-    title: 'Tetris',
-    description: 'Arrange falling blocks to create complete lines. A timeless puzzle challenge!',
-    category: 'puzzle',
-    thumbnail_url: '🎮',
-    difficulty_level: 'medium',
-    play_count: 0
-  },
-  {
     game_id: '2048',
     title: '2048',
     description: 'Slide numbered tiles to combine them and reach 2048. Simple yet addictive!',
