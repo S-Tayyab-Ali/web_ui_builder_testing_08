@@ -27,7 +27,7 @@ export default function Home() {
       
       <main className="container px-4 py-8">
         <div className="mb-8">
-          <h2 className="text-4xl font-bold mb-2">Play Games Online</h2>
+          <h2 className="text-4xl font-bold mb-2">Play Games Online for free</h2>
           <p className="text-muted-foreground mb-6">
             Choose from our collection of instant browser games. No downloads required!
           </p>
